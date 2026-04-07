@@ -62,7 +62,7 @@ if (!profileDir) {
       channel: 'chrome',
       headless,
       args: [`--remote-debugging-port=${port}`],
-      ignoreDefaultArgs: ['--enable-automation'],
+      ignoreDefaultArgs: ['--enable-automation', '--no-sandbox'],
     });
 
     // Wait briefly for CDP to be ready, then signal

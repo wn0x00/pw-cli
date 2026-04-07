@@ -20,8 +20,8 @@ Raw Playwright is excellent for test suites and scripted automation, but ad hoc 
 - Headed mode by default
 - Named profile support
 - `run-code` for inline JavaScript or piped stdin
-- `run-script` for executing local JavaScript files
-- `run-script` supports CommonJS-style scripts that use `require`, `module`, `exports`, `__filename`, and `__dirname`
+- `run-script` for executing local JavaScript files with `main` function convention
+- `run-script` supports standard CommonJS modules (`require`, `__filename`, `__dirname`) and also bare-code scripts
 - Queue management for multi-step flows
 - Automatic browser launch when needed
 - XPath command conversion for common actions
@@ -74,46 +74,42 @@ Run a local script:
 pw-cli run-script ./scrape.js --url https://example.com
 ```
 
-`run-script` is intended for multi-step automation. Your script can use:
-
-- Playwright globals: `page`, `context`, `browser`, `playwright`
-- Script args: `args`
-- CommonJS globals: `require`, `module`, `exports`, `__filename`, `__dirname`
-
-More complete example:
+`run-script` is intended for multi-step automation. Define an `async function main` that receives Playwright globals as a single object:
 
 ```javascript
 // scripts/extract-links.js
 const fs = require('fs');
 
-const url = args[args.indexOf('--url') + 1] || 'https://example.com';
-const output = args[args.indexOf('--output') + 1] || 'links.json';
+async function main({ page, args }) {
+  const url = args[args.indexOf('--url') + 1] || 'https://example.com';
+  const output = args[args.indexOf('--output') + 1] || 'links.json';
 
-await page.goto(url, { waitUntil: 'networkidle' });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-const links = await page.locator('a').evaluateAll(nodes =>
-  nodes
-    .map(a => ({
-      text: a.textContent.trim(),
-      href: a.href,
-    }))
-    .filter(item => item.href)
-);
+  const links = await page.locator('a').evaluateAll(nodes =>
+    nodes
+      .map(a => ({
+        text: a.textContent.trim(),
+        href: a.href,
+      }))
+      .filter(item => item.href)
+  );
 
-fs.writeFileSync(
-  output,
-  JSON.stringify(
-    {
-      url,
-      count: links.length,
-      links,
-    },
-    null,
-    2
-  )
-);
+  fs.writeFileSync(
+    output,
+    JSON.stringify(
+      {
+        url,
+        count: links.length,
+        links,
+      },
+      null,
+      2
+    )
+  );
 
-return `saved ${links.length} links to ${output}`;
+  return `saved ${links.length} links to ${output}`;
+}
 ```
 
 ```bash
@@ -154,7 +150,7 @@ pw-cli list
 - `open` injects headed and persistent defaults
 - Browser-backed commands can auto-open a browser session if needed
 - `run-code` accepts stdin and plain inline statements
-- `run-script` executes a local `.js` file with Playwright globals, CommonJS globals, and `args`
+- `run-script` executes a local `.js` file — auto-detects `main` function, `module.exports`, or bare code
 - Common element commands accept XPath refs
 - `queue` lets you batch multiple commands and run them in order
 
@@ -281,7 +277,7 @@ console [min-level]         list console messages
 run-code <code>             run playwright code snippet
                             pw-cli: reads code from stdin when <code> is omitted
                             pw-cli: wraps plain statements in an async function
-run-script <file> [...]     run a local JavaScript file with Playwright globals and script args
+run-script <file> [...]     run a local JavaScript file (main function or module.exports)
 network                     list all network requests since loading the page
 tracing-start               start trace recording
 tracing-stop                stop trace recording

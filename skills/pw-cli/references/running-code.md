@@ -271,4 +271,8 @@ EOF
 | File I/O | Awkward | Natural (`__dirname`) |
 | Multiline | Via stdin | Native JS file |
 
-For scripts that need arguments, file I/O, or complex logic, prefer [run-script](run-script.md).
+For scripts that need arguments, file I/O, or complex logic, prefer [run-script](run-script.md). Use the `main` function style for best IDE support:
+
+```javascript
+async function main({ page, args }) { /* ... */ }
+```

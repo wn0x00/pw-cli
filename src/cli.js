@@ -55,10 +55,14 @@ function getRunScriptHelp() {
   return `Usage:
   pw-cli run-script <file.js> [args...]
 
-What the script receives:
-  - Playwright globals: page, context, browser, playwright
-  - Script args array: args
-  - CommonJS globals: require, module, exports, __filename, __dirname
+Script format (standard module):
+  module.exports = async function ({ page, context, browser, playwright, args }) {
+    // your code here
+  };
+
+  The exported function receives { page, context, browser, playwright, args }.
+  CommonJS globals (require, __filename, __dirname) are available as usual.
+  Legacy bare-code scripts (without module.exports) are still supported.
 
 Example:
   pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json`;
