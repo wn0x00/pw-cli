@@ -1,0 +1,38 @@
+{
+  "name": "@guanzhu.me/pw-cli",
+  "version": "0.0.14",
+  "description": "Persistent Playwright browser CLI with headed defaults, profile support, queueing, and script execution",
+  "bin": {
+    "pw-cli": "./bin/pw-cli.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "lint": "node scripts/check-syntax.js",
+    "test": "node --test",
+    "verify": "npm run lint && npm test"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.40.0",
+    "@playwright/cli": ">=0.1.0"
+  },
+  "keywords": [
+    "playwright",
+    "cli",
+    "browser",
+    "automation",
+    "chromium",
+    "testing"
+  ],
+  "license": "MIT"
+}
