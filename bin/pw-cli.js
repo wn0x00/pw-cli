@@ -771,6 +771,43 @@ async function main() {
     return;
   }
 
+  // ── Fast path: send command directly to playwright-cli daemon socket ────
+  // Skip heavy setup (npm root -g, require playwright, CDP probes) entirely.
+  // Only for commands that the daemon handles AND don't need local preprocessing.
+  if (command && !MGMT_COMMANDS.has(command)) {
+    // Build the args array the daemon expects: strip session flags, keep command + args
+    let fastArgs = [...rawArgv];
+    // Remove session flags (-s xxx / --session xxx / --session=xxx)
+    fastArgs = fastArgs.filter((a, i, arr) => {
+      if (a === '-s' || a === '--session') { arr[i + 1] = undefined; return false; }
+      if (a === undefined) return false;
+      if (a.startsWith('-s=') || a.startsWith('--session=')) return false;
+      return true;
+    }).filter(Boolean);
+
+    // Apply XPath conversion if needed
+    fastArgs = convertXPathCommand(fastArgs);
+
+    // Handle run-code wrapping for XPath-converted commands
+    if (fastArgs[0] === 'run-code' && fastArgs.length > 1) {
+      const code = fastArgs.slice(1).join(' ');
+      fastArgs = ['run-code', wrapCodeIfNeeded(code)];
+    }
+
+    const { sendCommand } = require('../src/fast-send');
+    const result = await sendCommand(fastArgs, session);
+    if (result !== null) {
+      // Daemon responded — use its result
+      if (result.isError) {
+        process.stderr.write(`${result.text}\n`);
+        process.exit(1);
+      }
+      if (result.text) process.stdout.write(result.text + '\n');
+      return;
+    }
+    // result === null means daemon not running — fall through to full path
+  }
+
   // ── From here on: delegate to playwright-cli (with enhancements) ─────────
   const cliPath = findPlaywrightCli();
   if (!cliPath) {
