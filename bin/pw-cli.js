@@ -305,6 +305,68 @@ Example:
 `;
 }
 
+const REQUIRED_POSITIONAL_ARGS = new Map([
+  ['goto', { count: 1, usage: 'pw-cli goto <url>' }],
+  ['type', { count: 1, usage: 'pw-cli type <text>' }],
+  ['click', { count: 1, usage: 'pw-cli click <ref> [button]' }],
+  ['dblclick', { count: 1, usage: 'pw-cli dblclick <ref> [button]' }],
+  ['fill', { count: 2, usage: 'pw-cli fill <ref> <text>' }],
+  ['drag', { count: 2, usage: 'pw-cli drag <startRef> <endRef>' }],
+  ['hover', { count: 1, usage: 'pw-cli hover <ref>' }],
+  ['select', { count: 2, usage: 'pw-cli select <ref> <value>' }],
+  ['upload', { count: 1, usage: 'pw-cli upload <file>' }],
+  ['check', { count: 1, usage: 'pw-cli check <ref>' }],
+  ['uncheck', { count: 1, usage: 'pw-cli uncheck <ref>' }],
+  ['eval', { count: 1, usage: 'pw-cli eval <func> [ref]' }],
+  ['resize', { count: 2, usage: 'pw-cli resize <width> <height>' }],
+  ['press', { count: 1, usage: 'pw-cli press <key>' }],
+  ['keydown', { count: 1, usage: 'pw-cli keydown <key>' }],
+  ['keyup', { count: 1, usage: 'pw-cli keyup <key>' }],
+  ['mousemove', { count: 2, usage: 'pw-cli mousemove <x> <y>' }],
+  ['mousewheel', { count: 2, usage: 'pw-cli mousewheel <dx> <dy>' }],
+  ['tab-select', { count: 1, usage: 'pw-cli tab-select <index>' }],
+  ['cookie-get', { count: 1, usage: 'pw-cli cookie-get <name>' }],
+  ['cookie-set', { count: 2, usage: 'pw-cli cookie-set <name> <value>' }],
+  ['cookie-delete', { count: 1, usage: 'pw-cli cookie-delete <name>' }],
+  ['localstorage-get', { count: 1, usage: 'pw-cli localstorage-get <key>' }],
+  ['localstorage-set', { count: 2, usage: 'pw-cli localstorage-set <key> <value>' }],
+  ['localstorage-delete', { count: 1, usage: 'pw-cli localstorage-delete <key>' }],
+  ['sessionstorage-get', { count: 1, usage: 'pw-cli sessionstorage-get <key>' }],
+  ['sessionstorage-set', { count: 2, usage: 'pw-cli sessionstorage-set <key> <value>' }],
+  ['sessionstorage-delete', { count: 1, usage: 'pw-cli sessionstorage-delete <key>' }],
+  ['route', { count: 1, usage: 'pw-cli route <pattern>' }],
+]);
+
+function getPositionalsAfterCommand(argv, command) {
+  const commandIdx = argv.indexOf(command);
+  if (commandIdx === -1) return [];
+
+  const positionals = [];
+  for (let i = commandIdx + 1; i < argv.length; i++) {
+    const arg = argv[i];
+    if (typeof arg !== 'string' || arg.length === 0) continue;
+    if (arg === '--') {
+      positionals.push(...argv.slice(i + 1).filter(Boolean));
+      break;
+    }
+    if (!arg.startsWith('-')) {
+      positionals.push(arg);
+    }
+  }
+  return positionals;
+}
+
+function validateRequiredArgs(argv, command) {
+  const rule = REQUIRED_POSITIONAL_ARGS.get(command);
+  if (!rule) return;
+
+  const positionals = getPositionalsAfterCommand(argv, command);
+  if (positionals.length >= rule.count) return;
+
+  process.stderr.write(`pw-cli: ${command} requires ${rule.count === 1 ? 'an argument' : `${rule.count} arguments`}\n\nUsage: ${rule.usage}\n`);
+  process.exit(1);
+}
+
 // Management commands that don't need a running browser
 const MGMT_COMMANDS = new Set([
   'open', 'close', 'list', 'kill-all', 'close-all', 'delete-data',
@@ -752,6 +814,8 @@ async function main() {
     process.stdout.write(getRunScriptHelpText());
     process.exit(1);
   }
+
+  validateRequiredArgs(rawArgv, command);
 
   // ── queue: batch actions and run them together ────────────────────────────
   if (command === 'queue') {
