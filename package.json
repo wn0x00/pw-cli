@@ -34,5 +34,13 @@
     "chromium",
     "testing"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wn0x00/pw-cli.git"
+  },
+  "homepage": "https://github.com/wn0x00/pw-cli#readme",
+  "bugs": {
+    "url": "https://github.com/wn0x00/pw-cli/issues"
+  },
   "license": "MIT"
 }
