@@ -9,9 +9,12 @@
     "access": "public"
   },
   "scripts": {
+    "changeset": "changeset",
     "lint": "node scripts/check-syntax.js",
     "test": "node --test",
-    "verify": "npm run lint && npm test"
+    "verify": "npm run lint && npm test",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "files": [
     "bin/",
@@ -23,8 +26,8 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "playwright": ">=1.40.0",
-    "@playwright/cli": ">=0.1.0"
+    "@playwright/cli": ">=0.1.0",
+    "playwright": ">=1.40.0"
   },
   "keywords": [
     "playwright",
@@ -42,5 +45,8 @@
   "bugs": {
     "url": "https://github.com/wn0x00/pw-cli/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0"
+  }
 }
