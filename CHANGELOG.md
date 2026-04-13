@@ -1,11 +1,16 @@
 # Changelog
 
+## 0.0.20
+
+### Patch Changes
+
+- Support `PLAYWRIGHT_MCP_EXTENSION_TOKEN` environment variable for authenticated extension relay connections.
+
 ## 0.0.19
 
 ### Patch Changes
 
 - Fix `--extension` startup on installs where `playwright-core/lib/utilsBundleImpl` is exposed as a directory entrypoint instead of a flat file path.
-- Support `PLAYWRIGHT_MCP_EXTENSION_TOKEN` environment variable for authenticated extension relay connections.
 
 ## 0.0.18
 
