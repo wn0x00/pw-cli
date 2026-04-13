@@ -6,7 +6,7 @@ const { readState } = require('./state');
 const { readStdin, die, probeCDP } = require('./utils');
 
 function parseArgs(argv) {
-  const global = { headless: false, profile: 'default', port: 9222 };
+  const global = { headless: false, profile: 'default', port: 9222, extension: false };
   const rest = [];
   let i = 0;
 
@@ -14,6 +14,10 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === '--headless') {
       global.headless = true;
+    } else if (arg === '--extension') {
+      global.extension = true;
+    } else if (arg.startsWith('--extension=')) {
+      global.extension = arg.split('=')[1] || true;
     } else if (arg === '--profile' && argv[i + 1]) {
       global.profile = argv[++i];
     } else if (arg === '--port' && argv[i + 1]) {
@@ -47,7 +51,7 @@ async function cmdRunCode(rest, opts) {
       console.log(result);
     }
   } finally {
-    await conn.browser.close(); // disconnect only, browser keeps running
+    await (conn.close ? conn.close() : conn.browser.close());
   }
 }
 
@@ -65,7 +69,8 @@ Script format (standard module):
   Legacy bare-code scripts (without module.exports) are still supported.
 
 Example:
-  pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json`;
+  pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json
+  pw-cli run-script --extension ./scripts/extract-links.js --url https://example.com`;
 }
 
 async function cmdRunScript(rest, opts) {
@@ -81,7 +86,7 @@ async function cmdRunScript(rest, opts) {
       console.log(result);
     }
   } finally {
-    await conn.browser.close();
+    await (conn.close ? conn.close() : conn.browser.close());
   }
 }
 
@@ -117,6 +122,7 @@ USAGE
 
 GLOBAL OPTIONS
   --headless          Run browser headlessly (default: headed)
+  --extension[=name]  Run code/scripts through Playwright MCP Bridge (default: chrome)
   --profile <name>    Named profile to use (default: "default")
   --port <number>     CDP port (default: 9222)
 
@@ -134,6 +140,7 @@ EXAMPLES
   pw-cli run-code "await page.goto('https://example.com'); console.log(await page.title())"
   echo "await page.screenshot({ path: 'out.png' })" | pw-cli run-code
   pw-cli run-script ./scrape.js --url https://example.com
+  pw-cli run-script --extension ./scrape.js --url https://example.com
   pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json
   pw-cli --headless run-code "await page.goto('https://example.com')"
   pw-cli --profile work status

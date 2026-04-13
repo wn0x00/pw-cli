@@ -113,12 +113,16 @@ function getCommandAndSession(argv) {
 }
 
 function parsePwCliGlobalOptions(argv) {
-  const options = { headless: false, profile: 'default', port: 9223 };
+  const options = { headless: false, profile: 'default', port: 9223, extension: false };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--headless') {
       options.headless = true;
+    } else if (arg === '--extension') {
+      options.extension = true;
+    } else if (arg.startsWith('--extension=')) {
+      options.extension = arg.split('=')[1] || true;
     } else if (arg === '--profile' && argv[i + 1]) {
       options.profile = argv[++i];
     } else if (arg === '--port' && argv[i + 1]) {
@@ -260,6 +264,7 @@ Global options:
   --version                   print version
   -s, --session <name>        choose browser session
   --headless                  used by pw-cli-managed browser launches
+  --extension[=browser]       run scripts/code through Playwright MCP Bridge (default browser: chrome)
 
 Requirements:
   Node.js 18+
@@ -302,6 +307,7 @@ What the script receives:
 
 Example:
   pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json
+  pw-cli run-script --extension ./scripts/extract-links.js --url https://example.com
 `;
 }
 
@@ -736,7 +742,7 @@ async function handleRunScript(rawArgv) {
     process.stderr.write(`pw-cli: ${err.message || err}\n`);
     process.exit(1);
   } finally {
-    await conn.browser.close();
+    await (conn.close ? conn.close() : conn.browser.close());
   }
   process.exit(0);
 }
@@ -783,7 +789,7 @@ async function handleRunCode(rawArgv) {
     process.stderr.write(`pw-cli: ${err.message || err}\n`);
     process.exit(1);
   } finally {
-    await conn.browser.close();
+    await (conn.close ? conn.close() : conn.browser.close());
   }
 
   process.exit(0);

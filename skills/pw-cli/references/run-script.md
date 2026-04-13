@@ -6,6 +6,7 @@ Run a full `.js` script file with all Playwright globals available. Best for com
 
 ```bash
 pw-cli run-script <path/to/script.js> [args...]
+pw-cli run-script --extension[=browser] <path/to/script.js> [args...]
 ```
 
 ## Script styles
@@ -64,6 +65,15 @@ return await page.title();
 | `process` | standard | implicit local |
 
 Top-level `await` is supported in bare code and `module.exports` styles.
+
+## Playwright MCP Bridge
+
+If you want `run-script` to drive an already-open Chrome/Edge browser through the Playwright MCP Bridge extension, add `--extension`:
+
+```bash
+pw-cli run-script --extension ./automation.js --url https://example.com
+pw-cli run-script --extension=msedge ./automation.js --url https://example.com
+```
 
 ## Script template
 

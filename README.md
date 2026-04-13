@@ -72,6 +72,7 @@ Run a local script:
 
 ```bash
 pw-cli run-script ./scrape.js --url https://example.com
+pw-cli run-script --extension ./scrape.js --url https://example.com
 ```
 
 `run-script` is intended for multi-step automation. Define an `async function main` that receives Playwright globals as a single object:
@@ -114,6 +115,13 @@ async function main({ page, args }) {
 
 ```bash
 pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json
+```
+
+To drive an already-open Chrome/Edge browser through Playwright MCP Bridge, add `--extension`:
+
+```bash
+pw-cli run-script --extension ./scripts/extract-links.js --url https://example.com
+pw-cli run-script --extension=msedge ./scripts/extract-links.js --url https://example.com
 ```
 
 Reuse a page that was opened through `pw-cli open`:
@@ -332,6 +340,7 @@ pw-cli run-code "await page.goto('https://example.com'); return await page.title
 echo "return await page.url()" | pw-cli run-code
 pw-cli run-script ./scripts/smoke.js --env prod
 pw-cli run-script ./scripts/extract-links.js --url https://example.com --output links.json
+pw-cli run-script --extension ./scripts/extract-links.js --url https://example.com
 pw-cli click "//button[contains(., 'Submit')]"
 pw-cli queue add goto https://example.com
 pw-cli queue add snapshot
