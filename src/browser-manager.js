@@ -322,14 +322,14 @@ class CDPRelayServer {
   }
 
   _connectBrowser(clientName) {
-    const relayUrl = `${this._wsHost}${this._extensionPath}`;
+    let relayUrl = `${this._wsHost}${this._extensionPath}`;
+    if (this._extensionToken) {
+      relayUrl += `?token=${encodeURIComponent(this._extensionToken)}`;
+    }
     const url = new URL('chrome-extension://mmlmfjhmonkocbjadbfplnigmagldckm/connect.html');
     url.searchParams.set('mcpRelayUrl', relayUrl);
     url.searchParams.set('client', JSON.stringify({ name: clientName }));
     url.searchParams.set('protocolVersion', '1');
-    if (this._extensionToken) {
-      url.searchParams.set('token', this._extensionToken);
-    }
 
     const executablePath = this._executablePath || resolveExtensionExecutablePath(this._browserChannel);
     const args = [];
