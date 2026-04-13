@@ -9,7 +9,27 @@ const crypto = require('crypto');
 const { execSync } = require('child_process');
 const { readState, writeState, clearState, getProfileDir } = require('./state');
 const { probeCDP, findFreePort, sleep, fetchActivePageUrl } = require('./utils');
-const { ws, wsServer } = require('../node_modules/@playwright/cli/node_modules/playwright-core/lib/utilsBundleImpl');
+
+function loadPlaywrightUtilsBundle() {
+  const candidates = [
+    '../node_modules/@playwright/cli/node_modules/playwright-core/lib/utilsBundleImpl',
+    '../node_modules/@playwright/cli/node_modules/playwright-core/lib/utilsBundleImpl/index.js',
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return require(candidate);
+    } catch (error) {
+      if (error.code !== 'MODULE_NOT_FOUND') {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error('Unable to load playwright-core utilsBundleImpl from @playwright/cli. Reinstall @playwright/cli or playwright.');
+}
+
+const { ws, wsServer } = loadPlaywrightUtilsBundle();
 
 const DAEMON_SCRIPT = path.join(__dirname, 'launch-daemon.js');
 
@@ -242,13 +262,14 @@ class ExtensionConnection {
 }
 
 class CDPRelayServer {
-  constructor(server, browserChannel, userDataDir, executablePath) {
+  constructor(server, browserChannel, userDataDir, executablePath, extensionToken) {
     this._playwrightConnection = null;
     this._extensionConnection = null;
     this._nextSessionId = 1;
     this._browserChannel = browserChannel;
     this._userDataDir = userDataDir;
     this._executablePath = executablePath;
+    this._extensionToken = extensionToken || null;
     const uuid = crypto.randomUUID();
     const address = server.address();
     this._wsHost = `ws://127.0.0.1:${address.port}`;
@@ -294,6 +315,9 @@ class CDPRelayServer {
     url.searchParams.set('mcpRelayUrl', relayUrl);
     url.searchParams.set('client', JSON.stringify({ name: clientName }));
     url.searchParams.set('protocolVersion', '1');
+    if (this._extensionToken) {
+      url.searchParams.set('token', this._extensionToken);
+    }
 
     const executablePath = this._executablePath || resolveExtensionExecutablePath(this._browserChannel);
     const args = [];
@@ -318,6 +342,13 @@ class CDPRelayServer {
       return;
     }
     if (url.pathname === this._extensionPath) {
+      if (this._extensionToken) {
+        const token = url.searchParams.get('token');
+        if (token !== this._extensionToken) {
+          socket.close(4003, 'Invalid token');
+          return;
+        }
+      }
       this._handleExtensionConnection(socket);
       return;
     }
@@ -459,7 +490,8 @@ async function startExtensionRelay(extension) {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);
   });
-  const relay = new CDPRelayServer(server, browser, null, null);
+  const extensionToken = process.env.PLAYWRIGHT_MCP_EXTENSION_TOKEN || null;
+  const relay = new CDPRelayServer(server, browser, null, null, extensionToken);
   await relay.ensureExtensionConnectionForMCPContext('pw-cli');
   return { relay, server };
 }

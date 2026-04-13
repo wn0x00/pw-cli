@@ -1,6 +1,6 @@
 {
   "name": "@guanzhu.me/pw-cli",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Persistent Playwright browser CLI with headed defaults, profile support, queueing, and script execution",
   "bin": {
     "pw-cli": "./bin/pw-cli.js"
