@@ -11,22 +11,34 @@ const { readState, writeState, clearState, getProfileDir } = require('./state');
 const { probeCDP, findFreePort, sleep, fetchActivePageUrl } = require('./utils');
 
 function loadPlaywrightUtilsBundle() {
-  const candidates = [
-    '../node_modules/@playwright/cli/node_modules/playwright-core/lib/utilsBundleImpl',
-    '../node_modules/@playwright/cli/node_modules/playwright-core/lib/utilsBundleImpl/index.js',
+  // playwright-core's package.json "exports" blocks deep subpath requires, so
+  // we locate the package root via require.resolve on package.json, then load
+  // the internal module by absolute path.
+  const searchPaths = [
+    path.join(__dirname, '..'),                           // local dev
+    path.join(__dirname, '..', 'node_modules', '@playwright', 'cli'),  // nested under pw-cli
   ];
 
-  for (const candidate of candidates) {
+  // Also search from the global npm root where @playwright/cli might live
+  try {
+    const globalRoot = execSync('npm root -g', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    searchPaths.push(path.join(globalRoot, '@playwright', 'cli'));
+    searchPaths.push(globalRoot);
+  } catch {}
+
+  for (const searchPath of searchPaths) {
     try {
-      return require(candidate);
+      const pkgJson = require.resolve('playwright-core/package.json', { paths: [searchPath] });
+      const utilsBundle = path.join(path.dirname(pkgJson), 'lib', 'utilsBundleImpl');
+      return require(utilsBundle);
     } catch (error) {
-      if (error.code !== 'MODULE_NOT_FOUND') {
+      if (error.code !== 'MODULE_NOT_FOUND' && error.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
         throw error;
       }
     }
   }
 
-  throw new Error('Unable to load playwright-core utilsBundleImpl from @playwright/cli. Reinstall @playwright/cli or playwright.');
+  throw new Error('Unable to load playwright-core utilsBundleImpl. Reinstall @playwright/cli or playwright.');
 }
 
 const { ws, wsServer } = loadPlaywrightUtilsBundle();

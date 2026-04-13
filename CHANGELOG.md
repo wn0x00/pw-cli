@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.0.20
+## 0.0.21
 
 ### Patch Changes
 
+- Fix `utilsBundleImpl` loading for global npm installs where `exports` field blocks deep subpath requires.
 - Support `PLAYWRIGHT_MCP_EXTENSION_TOKEN` environment variable for authenticated extension relay connections.
 
 ## 0.0.19
