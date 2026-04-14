@@ -322,14 +322,17 @@ class CDPRelayServer {
   }
 
   _connectBrowser(clientName) {
-    let relayUrl = `${this._wsHost}${this._extensionPath}`;
-    if (this._extensionToken) {
-      relayUrl += `?token=${encodeURIComponent(this._extensionToken)}`;
-    }
-    const url = new URL('chrome-extension://mmlmfjhmonkocbjadbfplnigmagldckm/connect.html');
-    url.searchParams.set('mcpRelayUrl', relayUrl);
+    const mcpRelayEndpoint = `${this._wsHost}${this._extensionPath}`;
+    // Support both the new official extension ID and the legacy one
+    const extensionId = process.env.PLAYWRIGHT_MCP_EXTENSION_ID || 'mmlmfjhmonkocbjadbfplnigmagldckm';
+    const url = new URL(`chrome-extension://${extensionId}/connect.html`);
+    url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
     url.searchParams.set('client', JSON.stringify({ name: clientName }));
     url.searchParams.set('protocolVersion', '1');
+    url.searchParams.set('newTab', 'true');
+    if (this._extensionToken) {
+      url.searchParams.set('token', this._extensionToken);
+    }
 
     const executablePath = this._executablePath || resolveExtensionExecutablePath(this._browserChannel);
     const args = [];
@@ -354,13 +357,6 @@ class CDPRelayServer {
       return;
     }
     if (url.pathname === this._extensionPath) {
-      if (this._extensionToken) {
-        const token = url.searchParams.get('token');
-        if (token !== this._extensionToken) {
-          socket.close(4003, 'Invalid token');
-          return;
-        }
-      }
       this._handleExtensionConnection(socket);
       return;
     }

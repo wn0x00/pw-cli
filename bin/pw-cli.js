@@ -718,9 +718,17 @@ async function handleRunScript(rawArgv) {
       break;
     }
   }
-  // Merge any flags after run-script into options
-  const afterOptions = parsePwCliGlobalOptions(flags);
-  Object.assign(options, afterOptions);
+  // Merge only explicitly specified flags after run-script into options
+  // (avoid overwriting earlier options with defaults from parsePwCliGlobalOptions)
+  if (flags.length > 0) {
+    const defaults = parsePwCliGlobalOptions([]);
+    const afterOptions = parsePwCliGlobalOptions(flags);
+    for (const [key, value] of Object.entries(afterOptions)) {
+      if (value !== defaults[key]) {
+        options[key] = value;
+      }
+    }
+  }
 
   const positionals = afterRs.slice(restIdx);
   const [scriptPath, ...scriptArgs] = positionals;
